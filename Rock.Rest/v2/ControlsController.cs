@@ -6283,6 +6283,57 @@ namespace Rock.Rest.v2
 
         #endregion
 
+        #region Group Picker (interview)
+        /// <summary>
+        /// Gets the groups that can be displayed in the group picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="TreeItemBag"/> objects that represent the groups.</returns>
+        [HttpPost]
+        [Route( "GroupPicker" )]
+        [Authenticate]
+        [ExcludeSecurityActions( Security.Authorization.EXECUTE_READ, Security.Authorization.EXECUTE_WRITE, Security.Authorization.EXECUTE_UNRESTRICTED_READ, Security.Authorization.EXECUTE_UNRESTRICTED_WRITE )]
+        [ProducesResponse( HttpStatusCode.OK, Type = typeof( List<TreeItemBag> ) )]
+        [Rock.SystemGuid.RestActionGuid( "A7866BBE-2F5A-4FEF-BA88-A3AB6B38FCFE" )]
+        public IActionResult GroupPicker2( GroupPickerOptionsBag options )
+        {
+            var rockContext = new RockContext();
+            var groupService = new GroupService( rockContext );
+
+            int takeCount = GlobalAttributesCache.Value( "core.GroupPickerFetchCount" ).AsIntegerOrNull() ?? 60;
+
+            var groupSearchQuery = groupService.Queryable().AsNoTracking().Take( takeCount );
+                   
+
+            if( options.Guid != null && options.Guid != Guid.Empty )
+            {
+                groupSearchQuery = groupSearchQuery.Where( g => g.Guid == options.Guid );
+            }
+
+            if ( options.RootGroupGuid != null && options.RootGroupGuid != Guid.Empty )
+            {
+                groupSearchQuery = groupSearchQuery.Where( g => g.Guid == options.RootGroupGuid );
+            }
+            if( options.IncludeInactiveGroups )
+            {
+                groupSearchQuery = groupSearchQuery.Where( g => g.IsActive );
+            }
+
+            var results = groupSearchQuery
+                    .Select( p => new Rock.Model.Group
+                    {
+                        Name = p.Name,
+                        Guid = p.Guid,
+                        IsActive = p.IsValid
+                    } )
+                    .ToList();
+
+
+            return Ok( results.ToList() );
+        }
+
+        #endregion
+
         #region Group Picker
 
         /// <summary>
